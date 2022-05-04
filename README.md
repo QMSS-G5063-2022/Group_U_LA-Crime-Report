@@ -17,10 +17,10 @@ Spatial and Temporal Trends Analysis of Criminal Activity in LA
 
 
 ## Key Components
-1. Data processing: selected crimes that completed investigation in Los Angeles from 2020 to the present and deleted the types of cases that happened less than 500 times.
-2. World map: Visualize the number of crimes from 2020 to present, and display crime incident locations on the map using leaflet.
-3. Aggregate data & temporal trends: The overall percentage of each types of crime. And specifically, how robbery and burglary change over time.
-4. Correlation Analysis
+* Data processing: selected crimes that completed investigation in Los Angeles from 2020 to the present and deleted the types of cases that happened less than 500 times.
+* World map: Visualize the number of crimes from 2020 to present, and display crime incident locations on the map using leaflet.
+* Aggregate data & temporal trends: The overall percentage of each types of crime. And specifically, how robbery and burglary change over time.
+* Correlation Analysis
 
 ## Participants: 
 * Shiyun Li（sl4815@columbia.edu)
