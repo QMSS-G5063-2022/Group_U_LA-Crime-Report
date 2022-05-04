@@ -1,7 +1,7 @@
 # Group_U_LA-Crime-Report
 
 ## Project Title
-Spatial and temporal trends in criminal activity in LA
+Spatial and Temporal Trends Analysis of Criminal Activity in LA
 
 
 ## Project Objective
