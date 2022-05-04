@@ -1,10 +1,4 @@
 # Group_U_LA-Crime-Report
-Participants: 
-* Shiyun Li（sl4815@columbia.edu)
-* Peiyuan Huo
-* Jun Ma (jm5309@columbia.edu)
-* Kimberly Shan(xs2428@columbia.edu)
-
 
 ## Project Title
 Spatial and temporal trends in criminal activity in LA
@@ -27,3 +21,9 @@ Spatial and temporal trends in criminal activity in LA
 2. World map: Visualize the number of crimes from 2020 to present, and display crime incident locations on the map using leaflet.
 3. Aggregate data & temporal trends: The overall percentage of each types of crime. And specifically, how robbery and burglary change over time.
 4. Correlation Analysis
+
+## Participants: 
+* Shiyun Li（sl4815@columbia.edu)
+* Peiyuan Huo
+* Jun Ma (jm5309@columbia.edu)
+* Kimberly Shan(xs2428@columbia.edu)
