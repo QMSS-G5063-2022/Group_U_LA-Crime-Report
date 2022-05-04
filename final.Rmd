@@ -1,0 +1,407 @@
+---
+title: "Group U_Final project"
+author: "shiyun li, xia shan, junjie ma, peiyuan huo"
+date: "4/25/2022"
+output: html_document
+---
+
+#data preparing, choose a random sample of 2000 crimes happened during 2000-2022.
+```{r}
+library(readr)
+library(DT)
+library(dplyr)
+crime=read.csv("/Users/apple/Desktop/dv/final/Crime_Data_from_2020_to_Present (1).csv")
+```
+
+#clean version of the total dataset
+```{r}
+col=c("DR_NO","Date.Rptd","Date.occ","TIME.OCC","AREA","AREA.NAME","Rpt.Dist.No","Crm.Cd.Desc","Mocodes",
+      "Vict.Age","Vict.Sex","Vict.Descent","Premis.Desc","Weapon.Desc","Status.Desc","LOCATION","LAT","LON")
+clean_total=crime[,colnames(crime) %in% col]
+
+clean_total$TIME.OCC <- as.character(clean_total$TIME.OCC) 
+proper_case <- function(x) {
+  return (gsub("\\b([A-Z])([A-Z]+)", "\\U\\1\\L\\2" , x, perl=TRUE))
+}
+clean_total <- clean_total %>% mutate(Crm.Cd.Desc = proper_case(Crm.Cd.Desc),
+                    AREA=proper_case(AREA),
+                    AREA.NAME=proper_case(AREA.NAME),
+                    LOCATION=proper_case(LOCATION),
+                    Weapon.Desc = proper_case(Weapon.Desc),
+                    Premis.Desc=proper_case(Premis.Desc),
+                    Status.Desc=proper_case(Status.Desc))
+```
+
+#delete the cases that are still under investigation
+```{r}
+sum_ctg=clean_total %>% 
+  group_by(Status.Desc)%>%
+  summarise(length(Status.Desc))
+
+total1=subset(clean_total,Status.Desc=="Adult Arrest"|Status.Desc=="Adult Other" |Status.Desc=="Juv Arrest"|Status.Desc=="Juv Other")
+```
+
+#integragate crime category
+```{r}
+sum_crime=total1 %>% 
+  group_by(Crm.Cd.Desc)%>%
+  summarise(length(Crm.Cd.Desc))
+#select the cirmes that happen more than 500 times 
+clean_total=subset(total1,Crm.Cd.Desc=="Intimate Partner - Simple Assault"|Crm.Cd.Desc=="Battery - Simple Assault"|Crm.Cd.Desc=="Assault With Deadly Weapon, Aggravated Assault
+"|Crm.Cd.Desc=="	Vandalism - Felony ($400 & Over, All Church Vandalisms) "|Crm.Cd.Desc=="Intimate Partner - Aggravated Assault"|Crm.Cd.Desc=="Criminal Threats - No Weapon Displayed"|Crm.Cd.Desc=="Robbery"|Crm.Cd.Desc=="Vehicle-Stolen"|Crm.Cd.Desc=="Burglary"|Crm.Cd.Desc=="Violation Of Restraining Order "|Crm.Cd.Desc=="Brandish Weapon "|Crm.Cd.Desc==" Vandalism - Misdeameanor ($399 Or Under)"|Crm.Cd.Desc=="Violation Of Court Order "|Crm.Cd.Desc==" Theft Plain - Petty ($950 & Under)"|Crm.Cd.Desc==" Letters, Lewd  -  Telephone Calls, Lewd"|Crm.Cd.Desc=="Child Abuse (Physical) - Simple Assault "|Crm.Cd.Desc=="Theft-Grand ($950.01 & Over)Excpt,Guns,Fowl,Livestk,Prod "|Crm.Cd.Desc==" Trespassing"|Crm.Cd.Desc=="Other Miscellaneous Crime "|Crm.Cd.Desc=="Contempt Of Court "|Crm.Cd.Desc==" Shoplifting - Petty Theft ($950 & Under)"|Crm.Cd.Desc==" Attempted Robbery"|Crm.Cd.Desc==" Battery Police (Simple)
+"|Crm.Cd.Desc=="Battery With Sexual Contact "|Crm.Cd.Desc=="Rape, Forcible "|Crm.Cd.Desc=="	
+Other Assault "|Crm.Cd.Desc==" 	Burglary From Vehicle"|Crm.Cd.Desc=="Embezzlement, Grand Theft ($950.01 & Over) "|Crm.Cd.Desc==" 	Theft Of Identity")
+```
+
+#use datatable to show the first 100 cases
+```{r}
+sample=clean_total[1:100, ]
+datatable(sample, options = list(pageLength = 5,scrollX='400px'))
+```
+
+#visualize the crime
+# Preprocessing
+```{r}
+library(tidyverse)
+library("lubridate")
+
+clean_total <- clean_total %>%
+  mutate(Date = as.Date(Date.Rptd, "%m/%d/%Y %H:%M:%S")) %>%
+  mutate(Location = str_squish(LOCATION))
+
+names(clean_total)[names(clean_total) == 'Crm.Cd.Desc'] <- "Category"
+clean_total$Year <- format(clean_total$Date, format="%Y")
+```
+
+# Map
+```{r}
+library(leaflet)
+
+clean_total <- clean_total[clean_total$LON != 0, ] # display the first 10,000 rows
+clean_total$popup <- paste("<br>", "<b>Category: </b>", clean_total$Category,
+                    "<br>", "<b>Date: </b>", clean_total$Date,
+                    "<br>", "<b>Address: </b>", clean_total$Location,
+                    "<br>", "<b>Vict Age: </b>", clean_total$Vict.Age,
+                    "<br>", "<b>Vict Sex: </b>", clean_total$Vict.Sex,
+                    "<br>", "<b>Longitude: </b>", clean_total$LON,
+                    "<br>", "<b>Latitude: </b>", clean_total$LAT)
+
+leaflet(clean_total, width = "100%") %>% addTiles() %>%
+  addTiles(group = "OSM (default)") %>%
+  addProviderTiles(provider = "Esri.WorldStreetMap",group = "World StreetMap") %>%
+  addProviderTiles(provider = "Esri.WorldImagery",group = "World Imagery") %>%
+  # addProviderTiles(provider = "NASAGIBS.ViirsEarthAtNight2012",group = "Nighttime Imagery") %>%
+  addMarkers(lng = ~LON, lat = ~LAT, popup = clean_total$popup, clusterOptions = markerClusterOptions()) %>%
+  addLayersControl(
+    baseGroups = c("OSM (default)","World StreetMap", "World Imagery"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+```
+
+# aggregte data
+
+```{r}
+df=read.csv("/Users/apple/Desktop/dv/final/clean_total.csv")
+```
+
+Summarize the data by crime category.
+```{r}
+library(DT)
+library(stringr)
+Sys.setlocale("LC_TIME", "C")
+df_category <- sort(table(df$Crm.Cd.Desc),decreasing = TRUE)
+df_category <- data.frame(df_category)
+colnames(df_category) <- c("Category", "Frequency")
+df_category$Percentage <- df_category$Frequency / sum(df_category$Frequency)
+datatable(df_category, options = list(scrollX='400px'))
+```
+
+Create a bar plot based on the crime category.
+```{r}
+library(ggplot2)
+library(ggrepel)
+bp <- ggplot(df_category, aes(x=Category, y=Frequency, fill=Category)) + 
+  geom_bar(stat="identity") + 
+  theme(axis.text.x=element_blank()) + 
+  geom_text_repel(data=df_category, aes(label=Category), size=2)
+bp
+```
+
+Create a pie chart based on the crime category.
+```{r}
+bp <- ggplot(df_category, aes(x="", y=Percentage, fill=Category)) +
+  geom_bar(stat="identity") + 
+  coord_polar("y") 
+bp
+```
+
+## Temporal Trends
+### Robbery Over Time
+Create a chart of crimes (Robbery) over time.
+```{r}
+df_robbery <- df[df$Crm.Cd.Desc == "Robbery",]
+
+df_robbery_daily <- df_robbery %>%
+  mutate(Date = as.Date(Date.Rptd, "%m/%d/%Y %H:%M:%S")) %>%
+  group_by(Date) %>%
+  summarize(count = n()) %>%
+  arrange(Date)
+
+library(ggplot2)
+library(scales)
+
+plot <- ggplot(df_robbery_daily, aes(x = Date, y = count)) +
+  geom_line(color = "#F2CA27", size = 0.1) +
+  geom_smooth(color = "#1A1A1A") +
+  # fte_theme() +
+  scale_x_date(breaks = date_breaks("1 year"), labels = date_format("%Y")) +
+  labs(x = "Date of Robbery", y = "Number of Robberys", title = "Daily Robberys From 2020 to 2022")
+plot
+```
+
+### Robbery Time Heatmap
+```{r}
+library(lubridate)
+
+get_hour <- function(x) {
+  return (as.numeric((str_split(str_split(x, " ", simplify = T)[,2], ":", simplify = T)[,1])))
+}
+
+get_weekdays <- function(x){
+  return (weekdays(as.Date(x, format = "%m/%d/%Y %H:%M:%S")))
+}
+
+df_robbery_time <- df_robbery %>%
+  mutate(Hour = sapply(Date.Rptd, get_hour)) %>%
+  mutate(DayOfWeek = sapply(Date.Rptd, get_weekdays)) %>%
+  group_by(DayOfWeek, Hour) %>%
+  summarize(count = n())
+# df_theft_time %>% head(10)
+datatable(df_robbery_time, options = list(scrollX='400px'))
+```
+
+```{r}
+plot <- ggplot(df_robbery_time, aes(x = Hour, y = DayOfWeek, fill = count)) +
+  geom_tile() +
+  # fte_theme() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.6), legend.title = element_blank(), legend.position="top", legend.direction="horizontal", legend.key.width=unit(2, "cm"), legend.key.height=unit(0.25, "cm"), legend.margin=unit(-0.5,"cm"), panel.margin=element_blank()) +
+  labs(x = "Hour of Roberry (Local Time)", y = "Day of Week of Roberry", title = "Number of Roberry from 2020 to 2022, by Time of Roberry") +
+  scale_fill_gradient(low = "white", high = "#27AE60", labels = comma)
+plot
+```
+
+### Robbery Over Time
+Create a chart of crimes (Burglary) over time.
+```{r}
+df_burglary <- df[df$Crm.Cd.Desc == "Burglary",]
+
+df_burglary_daily <- df_burglary %>%
+  mutate(Date = as.Date(Date.Rptd, "%m/%d/%Y %H:%M:%S")) %>%
+  group_by(Date) %>%
+  summarize(count = n()) %>%
+  arrange(Date)
+
+library(ggplot2)
+library(scales)
+
+plot <- ggplot(df_burglary_daily, aes(x = Date, y = count)) +
+  geom_line(color = "#F2CA27", size = 0.1) +
+  geom_smooth(color = "#1A1A1A") +
+  # fte_theme() +
+  scale_x_date(breaks = date_breaks("1 year"), labels = date_format("%Y")) +
+  labs(x = "Date of Burglary", y = "Number of Burglarys", title = "Daily Burglarys From 2020 to 2022")
+plot
+```
+
+```{r}
+df_burglary_time <- df_burglary %>%
+  mutate(Hour = sapply(Date.Rptd, get_hour)) %>%
+  mutate(DayOfWeek = sapply(Date.Rptd, get_weekdays)) %>%
+  group_by(DayOfWeek, Hour) %>%
+  summarize(count = n())
+
+plot <- ggplot(df_burglary_time, aes(x = Hour, y = DayOfWeek, fill = count)) +
+  geom_tile() +
+  # fte_theme() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.6), legend.title = element_blank(), legend.position="top", legend.direction="horizontal", legend.key.width=unit(2, "cm"), legend.key.height=unit(0.25, "cm"), legend.margin=unit(-0.5,"cm"), panel.margin=element_blank()) +
+  labs(x = "Hour of Burglary (Local Time)", y = "Day of Week of Burglary", title = "Number of Burglary from 2020 to 2022, by Time of Burglary") +
+  scale_fill_gradient(low = "white", high = "#27AE60", labels = comma)
+plot
+```
+
+#correlation analysis
+
+```{r}
+library(magrittr)
+library(dplyr)
+library(DT)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+```
+
+```{r}
+df=read.csv("/Users/apple/Desktop/dv/final/clean_total.csv")
+# Convert date formate
+df$date <- substr(df$Date.Rptd,1,10)
+betterDates <- as.Date(df$date, "%m/%d/%y")
+
+df$DayOfWeek <- weekdays(betterDates)
+
+```
+
+## Crime By Category
+```{r}
+df_arrest <- df %>% filter(grepl("Arrest", Status.Desc))
+df_top_crimes <- df_arrest %>%
+  group_by(Crm.Cd.Desc) %>% 
+  summarize(count = n()) %>%
+  arrange(desc(count))
+
+datatable(df_top_crimes, options = list(pageLength = 10,scrollX='400px'))
+```
+
+```{r}
+# Define a function that will conver Time.Occ to two-digit time indicator
+# For instance, 1245 will return 12, 25 will return 0, and 345 will return 3
+ToTime <- function(x){
+  if ((floor(log10(x)) + 1)<=2){
+    result <- "0"
+  } else if (floor(log10(x)) + 1==3){
+    result <- substr(x, 1, 1)
+  } else {
+    result <- substr(x, 1, 2)
+  }
+  return (result)
+}
+
+```
+
+
+## By Category
+```{r}
+df_arrest_time_crime <- df_arrest %>%
+  filter(Crm.Cd.Desc %in% df_top_crimes$Crm.Cd.Desc[2:19]) %>%
+  mutate(Hour = sapply(TIME.OCC, ToTime)) %>%
+  group_by(Crm.Cd.Desc, DayOfWeek, Hour) %>% 
+  summarize(count = n())
+
+dow_format <- c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday")
+hour_format <- c(paste(c(12,1:11),"AM"), paste(c(12,1:11),"PM"))
+
+df_arrest_time_crime$DayOfWeek <- factor(df_arrest_time_crime$DayOfWeek, level = rev(dow_format))
+df_arrest_time_crime$Hour <- factor(df_arrest_time_crime$Hour, level = 0:23, label = hour_format)
+
+datatable(df_arrest_time_crime, options = list(pageLength = 10, scrollX='400px'))
+```
+
+
+
+```{r}
+
+plot <- ggplot(df_arrest_time_crime, aes(x = Hour, y = DayOfWeek, fill = count)) +
+  geom_tile() +
+  # fte_theme() +
+  theme(axis.text=element_text(size=8), axis.text.x = element_text(angle = 90, vjust = 0.6, size = 8)) +
+  labs(x = "Hour of Arrest (Local Time)", y = "Day of Week of Arrest", title = "Number of Police Arrests in Los Angeles from 2020 – Present, by Category and Time of Arrest") +
+  scale_fill_gradient(low = "white", high = "#2980B9") +
+  facet_wrap(~ Crm.Cd.Desc, nrow = 3)
+plot
+
+```
+## By Category (Normalized)
+```{r}
+df_arrest_time_crime <- df_arrest_time_crime %>%
+  group_by(Crm.Cd.Desc) %>%
+  mutate(norm = count/sum(count))
+
+datatable(df_arrest_time_crime, options = list(pageLength = 10,scrollX='400px'))
+
+plot <- ggplot(df_arrest_time_crime, aes(x = Hour, y = DayOfWeek, fill = norm)) +
+  geom_tile() +
+  # fte_theme() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.6, size = 8)) +
+  labs(x = "Hour of Arrest (Local Time)", y = "Day of Week of Arrest", title = "Police Arrests in Los Angeles from 2020 by Time of Arrest, Normalized by Type of Crime") +
+  scale_fill_gradient(low = "white", high = "#2980B9") +
+  facet_wrap(~ Crm.Cd.Desc, nrow = 3)
+plot
+
+
+```
+## By Police District
+```{r}
+df_arrest_time_district <- df_arrest %>%
+  mutate(Hour = sapply(TIME.OCC, ToTime)) %>%
+  group_by(AREA.NAME, DayOfWeek, Hour) %>% 
+  summarize(count = n()) %>%
+  group_by(AREA.NAME) %>%
+  mutate(norm = count/sum(count))
+
+df_arrest_time_district$DayOfWeek <- factor(df_arrest_time_district$DayOfWeek, level = rev(dow_format))
+df_arrest_time_district$Hour <- factor(df_arrest_time_district$Hour, level = 0:23, label = hour_format)
+
+datatable(df_arrest_time_district, options = list(pageLength = 10,scrollX='400px'))
+```
+```{r}
+plot <- ggplot(df_arrest_time_district, aes(x = Hour, y = DayOfWeek, fill = norm)) +
+  geom_tile() +
+  theme(axis.text=element_text(size=5),axis.text.x = element_text(angle = 90, vjust = 0.6, size =4)) +
+  labs(x = "Hour of Arrest (Local Time)", y = "Day of Week of Arrest", title = "Police Arrests in Los Angeles from 2020 by Time of Arrest, Normalized by Station") +
+  scale_fill_gradient(low = "white", high = "#8E44AD") +
+  facet_wrap(~ AREA.NAME, nrow=5,shrink=FALSE) 
+plot
+
+
+
+```
+
+## By Month
+```{r}
+df_arrest_time_month <- df_arrest %>%
+  mutate(Month = format(as.Date(date, "%m/%d/%Y"), "%B"), Hour = sapply(TIME.OCC, ToTime)) %>%
+  group_by(Month, DayOfWeek, Hour) %>% 
+  summarize(count = n()) %>%
+  group_by(Month) %>%
+  mutate(norm = count/sum(count))
+
+df_arrest_time_month$DayOfWeek <- factor(df_arrest_time_month$DayOfWeek, level = rev(dow_format))
+df_arrest_time_month$Hour <- factor(df_arrest_time_month$Hour, level = 0:23, label = hour_format)
+
+# Set order of month facets by chronological order instead of alphabetical
+df_arrest_time_month$Month <- factor(df_arrest_time_month$Month,
+                                     level = c("January","February","March","April","May","June","July","August","September","October","November","December"))
+
+plot <- ggplot(df_arrest_time_month, aes(x = Hour, y = DayOfWeek, fill = norm)) +
+  geom_tile() +
+  # fte_theme() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.6, size = 4)) +
+  labs(x = "Hour of Arrest (Local Time)", y = "Day of Week of Arrest", title = "Police Arrests in Los Angeles from 2020 by Time of Arrest, Normalized by Month") +
+  scale_fill_gradient(low = "white", high = "#E74C3C") +
+  facet_wrap(~ Month, nrow = 4)
+plot
+```
+
+## By Year
+```{r}
+df_arrest_time_year <- df_arrest %>%
+  mutate(Year = format(as.Date(date(), "%m/%d/%Y"), "%Y"), Hour = sapply(TIME.OCC, ToTime)) %>%
+  group_by(Year, DayOfWeek, Hour) %>% 
+  summarize(count = n()) %>%
+  group_by(Year) %>%
+  mutate(norm = count/sum(count))
+
+df_arrest_time_year$DayOfWeek <- factor(df_arrest_time_year$DayOfWeek, level = rev(dow_format))
+df_arrest_time_year$Hour <- factor(df_arrest_time_year$Hour, level = 0:23, label = hour_format)
+
+plot <- ggplot(df_arrest_time_year, aes(x = Hour, y = DayOfWeek, fill = norm)) +
+  geom_tile() +
+  # fte_theme() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.6, size = 4)) +
+  labs(x = "Hour of Arrest (Local Time)", y = "Day of Week of Arrest", title = "Police Arrests Los Angeles from 2020 by Time of Arrest, Normalized by Year") +
+  scale_fill_gradient(low = "white", high = "#E67E22") +
+  facet_wrap(~ Year, nrow = 6)
+plot
+```
+
+
