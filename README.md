@@ -24,6 +24,6 @@ Spatial and Temporal Trends Analysis of Criminal Activity in LA
 
 ## Participants: 
 * Shiyun Li（sl4815@columbia.edu)
-* Peiyuan Huo
+* Peiyuan Huo (ph2620@columbia.edu)
 * Jun Ma (jm5309@columbia.edu)
 * Kimberly Shan(xs2428@columbia.edu)
