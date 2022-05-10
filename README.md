@@ -5,7 +5,7 @@ Spatial and Temporal Trends Analysis of Criminal Activity in LA
 
 ## Website
 Link: https://rpubs.com/xsaaaa/900445
-recording :https://drive.google.com/file/d/1RAtdBk9t_IfZfcBr6Ghqmx9nId2hEyUc/view?usp=sharing
+Recording :https://drive.google.com/file/d/1RAtdBk9t_IfZfcBr6Ghqmx9nId2hEyUc/view?usp=sharing
 
 ## Project Objective
 
