@@ -1,7 +1,7 @@
 # Group_U_LA-Crime-Report
 
 ## Project Title
-Spatial and Temporal Trends Analysis of Criminal Activity in LA
+Spatial and Temporal Trends Analysis of Criminal Activity in LA.
 
 ## Website
 Link: https://rpubs.com/xsaaaa/900445
